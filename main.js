@@ -1,6 +1,10 @@
 let nightMode = false;
 let mountainColorIndex = 0;
 let goatImage;
+let yPos;
+let xPos;
+let ySpeed;
+let xSpeed;
 const mountainColors = [
   [129, 133, 137],
   [180, 100, 60],
@@ -12,13 +16,20 @@ const mountainColors = [
 function setup() {
   createCanvas(windowWidth, windowHeight);
   imageMode(CENTER);
-  noLoop();
+  xPos = width / 2;
+  yPos = windowHeight - 200;
+  xSpeed = 2;
+  ySpeed = 0;
+  loop();
 }
 
 function preload(){
   goatImage = loadImage('images/goat.png');
 }
 
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
 function mousePressed() {
   nightMode = !nightMode;
   redraw();
@@ -31,6 +42,7 @@ function keyPressed() {
 
 function draw() {
   const hscale = width / 800; // horizontal scale factor relative to original 800px design
+  pasture();
   if (nightMode) {
     background(10, 20, 60);
     noStroke();
@@ -89,7 +101,7 @@ function draw() {
     fill(35, 105, 35);
     triangle(586 * hscale, 645, 643 * hscale, 545, 696 * hscale, 645);
     // Goat
-    image(goatImage, 400 * hscale, windowHeight - 200, 100, 100);
+    image(goatImage, xPos, yPos, 100, 100);
   } else {
     // Sky
     background(135, 206, 235);
@@ -148,7 +160,16 @@ function draw() {
     fill(35, 105, 35);
     triangle(586 * hscale, 645, 643 * hscale, 545, 696 * hscale, 645);
     // Goat
-    image(goatImage, 400 * hscale, windowHeight - 200, 100, 100);
+    image(goatImage, xPos, yPos, 100, 100);
   }
 }
 
+
+function pasture(){
+  xPos += xSpeed;
+
+  const margin = 60;
+  if (xPos > windowWidth - margin || xPos < margin) {
+    xSpeed *= -1;
+  }
+}
