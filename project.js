@@ -3,8 +3,20 @@
 
 let nodes = [];
 let selectedNode = null;
-let activeScene = null;
 let sceneNavigationButtons = [];
+const connections = [
+    ["life-1", "computer science-1"],
+    ["life-1", "computer science-2"],
+    ["life-1", "computer science-3"],
+    ["life-2", "computer science-1"],
+    ["life-2", "computer science-2"],
+    ["life-2", "computer science-3"],
+    ["computer science-1", "computer science-2"],
+    ["computer science-2", "computer science-3"],
+    ["computer science-1", "future-3"],
+    ["computer science-2", "future-3"],
+    ["computer science-3", "future-3"]
+];
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
@@ -14,43 +26,62 @@ function setup() {
 function createNodes() {
     const centerX = width / 2;
     const centerY = height / 2;
-    const rows = [centerY - 80, centerY, centerY + 80];
-    const sceneById = {
-        "life-1": lifeNode1,
-        "life-2": lifeNode2,
-        "computer science-1": computerScienceNode1,
-        "computer science-2": computerScienceNode2,
-        "computer science-3": computerScienceNode3,
-        "future-3": futureNode
-    };
-    const groups = [
-        { name: "life", offsetX: -240, offsetY: 40, rowIndexes: [0, 1] },
-        { name: "computer science", offsetX: 0, offsetY: 0, rowIndexes: [0, 1, 2] },
-        { name: "future", offsetX: 240, offsetY: -40, rowIndexes: [2] }
+    nodes = [
+        {
+            id: "life-1",
+            group: "life",
+            label: "Life 1",
+            x: centerX - 240,
+            y: centerY - 40,
+            scene: drawLifeNode1Scene
+        },
+        {
+            id: "life-2",
+            group: "life",
+            label: "Life 2",
+            x: centerX - 240,
+            y: centerY + 40,
+            scene: drawLifeNode2Scene
+        },
+        {
+            id: "computer science-1",
+            group: "computer science",
+            label: "CS 1",
+            x: centerX,
+            y: centerY - 80,
+            scene: drawComputerScienceNode1Scene
+        },
+        {
+            id: "computer science-2",
+            group: "computer science",
+            label: "CS 2",
+            x: centerX,
+            y: centerY,
+            scene: drawComputerScienceNode2Scene
+        },
+        {
+            id: "computer science-3",
+            group: "computer science",
+            label: "CS 3",
+            x: centerX,
+            y: centerY + 80,
+            scene: drawComputerScienceNode3Scene
+        },
+        {
+            id: "future-3",
+            group: "future",
+            label: "Future",
+            x: centerX + 240,
+            y: centerY + 40,
+            scene: drawFutureNodeScene
+        }
     ];
-
-    nodes = [];
-    groups.forEach(group => {
-        group.rowIndexes.forEach(index => {
-            const row = rows[index];
-            const id = `${group.name}-${index + 1}`;
-            nodes.push({
-                id,
-                group: group.name,
-                x: centerX + group.offsetX,
-                y: row + group.offsetY,
-                story: `${group.name}: story ${index + 1}`,
-                scene: sceneById[id],
-                visited: false
-            });
-        });
-    });
 }
 
 function draw() {
-    if (activeScene) {
+    if (selectedNode) {
         imageMode(CORNER);
-        activeScene();
+        selectedNode.scene();
         drawSceneNavigation();
         return;
     }
@@ -64,24 +95,10 @@ function drawConnections() {
     stroke(70, 170, 210, 120);
     strokeWeight(2);
 
-    for (let row = 0; row < 2; row += 1) {
-        drawLineBetween(getNode("computer science", row), getNode("computer science", row + 1));
-    }
-
-    const lifeNodes = nodes.filter(node => node.group === "life");
-    const computerScienceNodes = nodes.filter(node => node.group === "computer science");
-    const futureNodes = nodes.filter(node => node.group === "future");
-
-    lifeNodes.forEach(lifeNode => {
-        computerScienceNodes.forEach(computerScienceNode => {
-            drawLineBetween(lifeNode, computerScienceNode);
-        });
-    });
-
-    computerScienceNodes.forEach(computerScienceNode => {
-        futureNodes.forEach(futureNode => {
-            drawLineBetween(computerScienceNode, futureNode);
-        });
+    connections.forEach(([startId, endId]) => {
+        const startNode = nodes.find(node => node.id === startId);
+        const endNode = nodes.find(node => node.id === endId);
+        drawLineBetween(startNode, endNode);
     });
 }
 
@@ -100,39 +117,15 @@ function drawNodes() {
 }
 
 function getConnectedNodes(node) {
-    return nodes.filter(candidate => {
-        if (node.group === "life") {
-            return candidate.group === "computer science";
-        }
-
-        if (node.group === "computer science") {
-            if (candidate.group === "life" || candidate.group === "future") {
-                return true;
-            }
-
-            const nodeNumber = Number(node.id.split("-").pop());
-            const candidateNumber = Number(candidate.id.split("-").pop());
-            return candidate.group === "computer science" &&
-                Math.abs(nodeNumber - candidateNumber) === 1;
-        }
-
-        return node.group === "future" && candidate.group === "computer science";
-    });
+    return connections
+        .filter(([startId, endId]) => startId === node.id || endId === node.id)
+        .map(([startId, endId]) => nodes.find(candidate =>
+            candidate.id === (startId === node.id ? endId : startId)
+        ));
 }
 
 function getSceneNavigationButtons() {
-    if (!selectedNode) {
-        return [];
-    }
-
-    const buttons = getConnectedNodes(selectedNode).map(node => ({
-        label: node.group === "life"
-            ? `Life ${node.id.split("-").pop()}`
-            : node.group === "computer science"
-                ? `CS ${node.id.split("-").pop()}`
-                : "Future",
-        node
-    }));
+    const buttons = getConnectedNodes(selectedNode).map(node => ({ label: node.label, node }));
 
     if (selectedNode.group === "future") {
         buttons.push({ label: "Main Nodes", returnToGraph: true });
@@ -171,9 +164,7 @@ function drawSceneNavigation() {
     textSize(width < 600 ? 13 : 16);
 
     sceneNavigationButtons.forEach(button => {
-        const isHovered = mouseX >= button.x && mouseX <= button.x + button.width &&
-            mouseY >= button.y && mouseY <= button.y + button.height;
-        fill(isHovered ? color(255, 220, 120) : color(145, 235, 255));
+        fill(145, 235, 255);
         rect(button.x, button.y, button.width, button.height, 6);
         fill(8, 8, 28);
         text(button.label, button.x + button.width / 2, button.y + button.height / 2);
@@ -182,23 +173,16 @@ function drawSceneNavigation() {
 
 function openScene(node) {
     selectedNode = node;
-    selectedNode.visited = true;
-    activeScene = node.scene;
     redraw();
 }
 
 function returnToNodeGraph() {
-    activeScene = null;
     selectedNode = null;
     sceneNavigationButtons = [];
     redraw();
 }
 
-function getNode(groupName, row) {
-    return nodes.find(node => node.group === groupName && node.id.endsWith(`-${row + 1}`));
-}
-
-function getHoveredNode() {
+function getClickedNode() {
     return nodes.find(node => {
         const radiusX = 20;
         const radiusY = 13;
@@ -210,7 +194,7 @@ function getHoveredNode() {
 }
 
 function mousePressed() {
-    if (activeScene) {
+    if (selectedNode) {
         const clickedButton = sceneNavigationButtons.find(button =>
             mouseX >= button.x && mouseX <= button.x + button.width &&
             mouseY >= button.y && mouseY <= button.y + button.height
@@ -225,14 +209,14 @@ function mousePressed() {
         return;
     }
 
-    const clickedNode = getHoveredNode();
+    const clickedNode = getClickedNode();
     if (clickedNode) {
         openScene(clickedNode);
     }
 }
 
 function keyPressed() {
-    if (key === "Escape" && activeScene) {
+    if (key === "Escape" && selectedNode) {
         returnToNodeGraph();
     }
 }

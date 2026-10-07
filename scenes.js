@@ -12,31 +12,6 @@ function preload(){
   school = loadImage('images/school.png');
 }
 
-
-function lifeNode1() {
-    drawLifeNode1Scene();
-}
-
-function lifeNode2() {
-	drawLifeNode2Scene();
-}
-
-function computerScienceNode1() {
-	drawComputerScienceNode1Scene();
-}
-
-function computerScienceNode2() {
-	drawComputerScienceNode2Scene();
-}
-
-function computerScienceNode3() {
-	drawComputerScienceNode3Scene();
-}
-
-function futureNode() {
-	drawFutureNodeScene();
-}
-
 /*-----------------------------------------------*/
 
 
